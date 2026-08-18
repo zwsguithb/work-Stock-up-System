@@ -42,8 +42,13 @@ def main():
     ap.add_argument("--owner", default=os.environ.get("GITHUB_USER") or git_config("user.name") or "zwsguithb")
     ap.add_argument("--repo", default=os.environ.get("GITHUB_REPO") or "work-Stock-up-System")
     ap.add_argument("--branch", default="main")
+    ap.add_argument("--repo-path", default=".", help="本地 git 仓库路径（用于扫描 git ls-files 与读取文件）")
     ap.add_argument("--message", default=None)
     args = ap.parse_args()
+
+    # 切换到目标仓库目录，使 git ls-files 与文件读取都基于该仓库
+    if args.repo_path and args.repo_path != ".":
+        os.chdir(args.repo_path)
 
     TOKEN = os.environ.get("GITHUB_TOKEN")
     if not TOKEN:
