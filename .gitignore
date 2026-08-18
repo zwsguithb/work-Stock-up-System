@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite3
+*.log
+
+# Application runtime data (business DB, server logs) — not committed
+data/
+
+# Debug / verification harness scripts (not part of the running app)
+compare_detail.py
+compare_ps_zo.py
+compare_summary.py
+decompose.py
+verify_pipeline.py
+test_import_debug.py
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
