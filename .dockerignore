@@ -1,0 +1,13 @@
+data/
+__pycache__/
+*.db
+*.sqlite3
+*.log
+.git
+deploy_api.py
+compare_detail.py
+compare_ps_zo.py
+compare_summary.py
+decompose.py
+verify_pipeline.py
+test_import_debug.py
