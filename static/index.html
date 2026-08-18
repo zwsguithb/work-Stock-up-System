@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>各款号备货系统</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>各款号备货系统</h1>
+        <div class="subtitle">数据来源：领星 ERP 一键出表 · Excel 兜底上传</div>
+      </div>
+      <div class="subtitle" id="serverInfo"></div>
+    </header>
+
+    <div class="process-note">
+      <b>取数规则</b>：销量取<b>基准日往前、不含基准日当天</b>；库存取<b>实时</b>。
+      亚马逊按配置账号<b>前两个字母模糊匹配</b>（配 PS 则匹配所有 PS 开头店铺）；
+      沃尔玛 / temu / 其他平台<b>不分账号</b>汇总，temu 取近 30 天销量；
+      其他平台为除亚马逊、沃尔玛、temu 外的全部平台，<b>中国仓发货、不取海外仓</b>。
+      未生产批次列按上传文件动态生成，<b>n 个批次 → n+1 个可售天数列</b>。
+    </div>
+
+    <div class="toolbar">
+      <label>基准日</label>
+      <input type="date" id="baselineDate" />
+      <input type="text" id="reportName" placeholder="报表名称（可选）" style="width:150px" />
+      <button class="btn btn-primary" id="btnSyncGenerate">一键领星出表</button>
+      <button class="btn btn-secondary" id="btnGenerateOnly">仅重算（用已有数据）</button>
+      <button class="btn btn-secondary" id="btnConfig">参数 / 领星配置</button>
+      <label>出表记录</label>
+      <select id="reportHistory"></select>
+      <button class="btn btn-primary" id="btnExport">导出 Excel</button>
+      <span id="sourceInfo" class="subtitle"></span>
+    </div>
+
+    <div class="upload-grid">
+      <div class="card">
+        <h3>文件1：款号账号配置</h3>
+        <p>款号 / 生命周期 / 各亚马逊账号（备货周期、配额）/ 沃尔玛 / 其他平台 / temu 备货周期。每次上传覆盖旧配置。</p>
+        <input type="file" id="fileStyles" accept=".xlsx,.xls" />
+        <button class="btn btn-secondary" id="btnUploadStyles">保存款号配置</button>
+        <div class="status" id="statusStyles"></div>
+      </div>
+      <div class="card">
+        <h3>文件2：未生产数目</h3>
+        <p>sku / 批次1 / 批次2 / … / 最后一列为总未生产数目。列数不限，系统自动识别批次数量。每次上传覆盖。</p>
+        <input type="file" id="fileUnproduced" accept=".xlsx,.xls" />
+        <button class="btn btn-secondary" id="btnUploadUnproduced">保存未生产数目</button>
+        <div class="status" id="statusUnproduced"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <h3>兜底数据上传（未接领星 / 领星不通时使用）</h3>
+      <p>格式与《各款号备货.xlsx》中「销售数据-领星获取」「库存数据-领星获取」两张表一致。</p>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div>
+          <input type="file" id="fileSales" accept=".xlsx,.xls" />
+          <button class="btn btn-secondary" id="btnUploadSales">上传销售数据</button>
+          <div class="status" id="statusSales"></div>
+        </div>
+        <div>
+          <input type="file" id="fileInventory" accept=".xlsx,.xls" />
+          <button class="btn btn-secondary" id="btnUploadInventory">上传库存数据</button>
+          <div class="status" id="statusInventory"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="value" id="kpiSku">0</div><div class="label">SKU 汇总行</div></div>
+      <div class="kpi"><div class="value" id="kpiStyle">0</div><div class="label">款号数</div></div>
+      <div class="kpi"><div class="value" id="kpiToOrder">0</div><div class="label">需下单 SKU（本次&gt;0）</div></div>
+      <div class="kpi"><div class="value" id="kpiTotalOrder">0</div><div class="label">本次下单合计（件）</div></div>
+    </div>
+
+    <div class="toolbar" style="margin-bottom:12px">
+      <label>款号</label>
+      <div class="tabs" id="styleTabs" style="margin:0"></div>
+      <span style="flex:1"></span>
+      <input type="text" id="searchSku" placeholder="搜索 SKU" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px" />
+    </div>
+
+    <div class="tabs" id="viewTabs"></div>
+
+    <div class="table-wrap">
+      <table id="dataTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="subtitle" id="tableInfo" style="padding:8px 0"></div>
+  </div>
+
+  <div class="modal-backdrop" id="configModal">
+    <div class="modal">
+      <h3>参数与领星配置</h3>
+
+      <h4 style="margin:16px 0 4px;font-size:13px">计算口径</h4>
+      <label>可售天数分母</label>
+      <select id="cfgDivisor" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px">
+        <option value="denoised">减噪后总销量（需求说明书口径）</option>
+        <option value="forecast">最终预测销量（对齐样例文件口径）</option>
+      </select>
+      <label>可售天数取整</label>
+      <select id="cfgRounding" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px">
+        <option value="ceil">向上取整（需求说明书口径）</option>
+        <option value="round">四舍五入（对齐样例文件口径）</option>
+      </select>
+
+      <h4 style="margin:20px 0 4px;font-size:13px">领星开放接口</h4>
+      <label>AppId</label>
+      <input type="text" id="cfgAppId" />
+      <label>AppSecret</label>
+      <input type="password" id="cfgAppSecret" placeholder="留空表示不修改" />
+      <label>亚马逊店铺 sid（逗号分隔，多账号全部填入）</label>
+      <input type="text" id="cfgSidsAmazon" />
+      <label>沃尔玛 sid（逗号分隔）</label>
+      <input type="text" id="cfgSidsWalmart" />
+      <label>Temu storeId（逗号分隔）</label>
+      <input type="text" id="cfgSidsTemu" />
+      <label>其他平台 sid（逗号分隔）</label>
+      <input type="text" id="cfgSidsOther" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btnCloseConfig">取消</button>
+        <button class="btn btn-primary" id="btnSaveConfig">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
