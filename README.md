@@ -10,6 +10,7 @@
 - **多平台**：亚马逊（按账号模糊匹配前 2 字母）、沃尔玛、Temu、其他平台（仅国内仓、不含海外仓）。
 - **动态批次列**：按款号未生产数目生成批次列与 n+1 个可售天数列。
 - **导出**：按款号生成多 Sheet Excel（汇总 + 各平台明细 + 未生产数目）。
+- **按款号导出**：在工具栏输入款号后点「按款号导出」，仅导出该款号的全部数据表格（汇总 + 各平台明细 + 该款号未生产数目）；留空则导出全部款号。
 
 ## 目录结构
 
@@ -60,7 +61,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 | POST | `/api/reports/{id}/generate` | 生成测算 |
 | GET | `/api/reports/{id}/summary_table` | 汇总表 |
 | GET | `/api/reports/{id}/detail` | 明细表 |
-| GET | `/api/reports/{id}/export` | 导出 Excel |
+| GET | `/api/reports/{id}/export` | 导出 Excel（支持 `?style_code=款号` 仅导出该款号全部表格） |
 | POST | `/api/lingxing/sync` | 领星一键出表 |
 
 ## 说明
