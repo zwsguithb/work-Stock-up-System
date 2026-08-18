@@ -21,8 +21,7 @@ test_import_debug.py
 .idea/
 .DS_Store
 
-# Deploy helpers (push via GitHub API; not part of the app)
+# One-off deploy helpers (not part of the app; deploy_api.py is tracked on purpose)
 create_repo.py
 push_via_api.py
 push_via_contents.py
-deploy_api.py
