@@ -20,3 +20,9 @@ test_import_debug.py
 .vscode/
 .idea/
 .DS_Store
+
+# Deploy helpers (push via GitHub API; not part of the app)
+create_repo.py
+push_via_api.py
+push_via_contents.py
+deploy_api.py
