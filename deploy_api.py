@@ -65,14 +65,23 @@ def main():
     EMAIL = git_config("user.email", "zwsguithb@users.noreply.github.com")
 
     def api(method, path, data=None):
+        # PUT/POST 等非 GET 请求 urllib 不会自动跟随 301/302/307/308，
+        # 这里手动跟随 Location 重定向（仓库重命名/迁移时会返回 307）。
         url = f"{API}{path}"
-        body = json.dumps(data).encode() if data is not None else None
-        req = urllib.request.Request(url, data=body, headers=AUTH, method=method)
-        try:
-            with urllib.request.urlopen(req, timeout=60) as r:
-                return r.status, json.loads(r.read().decode() or "{}")
-        except urllib.error.HTTPError as e:
-            return e.code, json.loads(e.read().decode() or "{}")
+        for _ in range(3):
+            body = json.dumps(data).encode() if data is not None else None
+            req = urllib.request.Request(url, data=body, headers=AUTH, method=method)
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    return r.status, json.loads(r.read().decode() or "{}")
+            except urllib.error.HTTPError as e:
+                loc = e.headers.get("Location") if e.headers else None
+                if e.code in (301, 302, 307, 308) and loc:
+                    print(f"  redirect {e.code} -> {loc}")
+                    url = loc
+                    continue
+                return e.code, json.loads(e.read().decode() or "{}")
+        return 0, {"message": "too many redirects"}
 
     files = subprocess.check_output(["git", "ls-files"]).decode().splitlines()
     print(f"files to push: {len(files)} -> {args.owner}/{args.repo} ({args.branch})")
