@@ -75,6 +75,9 @@ header .subtitle { color: var(--muted); font-size: 12px; }
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-secondary { background: #f0f0f0; color: var(--text); border: 1px solid var(--border); }
 .btn-secondary:hover { background: #e5e5e5; }
+.btn-accent { background: #4a7fb5; color: #fff; }
+.btn-accent:hover { background: #3c6a98; }
+.divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
 
 .upload-grid {
   display: grid;
