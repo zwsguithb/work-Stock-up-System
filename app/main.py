@@ -23,5 +23,8 @@ def index():
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # 端口可通过环境变量 PORT 覆盖，默认 8001（避免与同机其它系统冲突）
+    port = int(os.environ.get("PORT", 8001))
+    uvicorn.run(app, host="0.0.0.0", port=port)
