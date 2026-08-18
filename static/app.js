@@ -110,6 +110,7 @@ function renderStyleTabs() {
     d.onclick = async () => {
       state.styleCode = s.style_code;
       state.view = { type: 'summary' };
+      $('exportStyleCode').value = s.style_code;
       renderStyleTabs(); renderViewTabs(); await loadView();
     };
     box.appendChild(d);
@@ -302,6 +303,14 @@ function init() {
   $('btnExport').onclick = () => {
     if (!state.reportId) { alert('请先出表'); return; }
     window.location = `/api/reports/${state.reportId}/export`;
+  };
+
+  $('btnExportByStyle').onclick = () => {
+    if (!state.reportId) { alert('请先出表'); return; }
+    const sc = $('exportStyleCode').value.trim();
+    let url = `/api/reports/${state.reportId}/export`;
+    if (sc) url += `?style_code=${encodeURIComponent(sc)}`;
+    window.location = url;
   };
 
   $('reportHistory').onchange = (e) => {
