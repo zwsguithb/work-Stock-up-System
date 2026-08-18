@@ -254,8 +254,10 @@ def _style_header(ws):
 
 @router.post("/api/reports/{report_id}/export")
 @router.get("/api/reports/{report_id}/export")
-def export_report(report_id: int):
-    """导出 Excel：结构对齐《各款号备货.xlsx》——每个款号 1 张汇总表 + N 张平台明细表"""
+def export_report(report_id: int, style_code: Optional[str] = None):
+    """导出 Excel：结构对齐《各款号备货.xlsx》——每个款号 1 张汇总表 + N 张平台明细表。
+    传入 style_code 时仅导出该款号的全部数据表格（汇总 + 各平台明细 + 该款号未生产数目）。
+    """
     conn = db.get_conn()
     cur = conn.cursor()
     cur.execute("SELECT name, baseline_date FROM reports WHERE id=?", (report_id,))
@@ -265,10 +267,21 @@ def export_report(report_id: int):
         raise HTTPException(status_code=404, detail="报告不存在")
     report_name, baseline = meta
 
-    styles = calc.get_report_styles(conn, report_id)
-    if not styles:
+    all_styles = calc.get_report_styles(conn, report_id)
+    if not all_styles:
         conn.close()
         raise HTTPException(status_code=404, detail="报告无数据，请先生成报表")
+
+    if style_code:
+        if style_code not in all_styles:
+            conn.close()
+            raise HTTPException(
+                status_code=404,
+                detail=f"款号 {style_code} 不在本报表内（可选：{', '.join(all_styles)}）",
+            )
+        styles = [style_code]
+    else:
+        styles = all_styles
 
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
@@ -307,9 +320,17 @@ def export_report(report_id: int):
     # 附：原始数据表（便于核对）
     ws3 = wb.create_sheet(title=_safe_title("未生产数目-线下统计"))
     ws3.append(["款号", "sku", "批次", "未生产数目"])
-    cur.execute(
-        "SELECT style_code, sku, batch_name, quantity FROM unproduced_batches ORDER BY style_code, sku, batch_name"
-    )
+    if style_code:
+        cur.execute(
+            "SELECT style_code, sku, batch_name, quantity FROM unproduced_batches "
+            "WHERE style_code=? ORDER BY sku, batch_name",
+            (style_code,),
+        )
+    else:
+        cur.execute(
+            "SELECT style_code, sku, batch_name, quantity FROM unproduced_batches "
+            "ORDER BY style_code, sku, batch_name"
+        )
     for r in cur.fetchall():
         ws3.append(list(r))
     _style_header(ws3)
@@ -319,7 +340,8 @@ def export_report(report_id: int):
     out = io.BytesIO()
     wb.save(out)
     out.seek(0)
-    filename = quote(f"{report_name or '各款号备货'}_{baseline}.xlsx")
+    suffix = f"_{style_code}" if style_code else ""
+    filename = quote(f"{report_name or '各款号备货'}_{baseline}{suffix}.xlsx")
     return StreamingResponse(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
