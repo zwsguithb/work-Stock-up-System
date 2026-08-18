@@ -38,10 +38,14 @@ replenishment-system/
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8001
 ```
 
-打开浏览器访问 http://localhost:8000 。`data/` 目录会在首次导入 `database` 时自动创建。
+打开浏览器访问 http://localhost:8001 。`data/` 目录会在首次导入 `database` 时自动创建。
+
+> **多系统共存**：本机若同时运行多个同类系统（如「中国仓监控」默认 8002），本系统默认端口为 **8001**，互不冲突。
+> 端口可用环境变量 `PORT` 覆盖：`PORT=9000 python -m uvicorn app.main:app --host 0.0.0.0`。
+> 用 `python app/main.py` 直接启动时同样读取 `PORT`（默认 8001）。
 
 ## 使用流程
 
